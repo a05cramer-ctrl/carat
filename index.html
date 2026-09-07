@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CARAT</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #080808;
+    --text: #F2EFE9;
+    --gold: #C9A227;
+    --secondary: #7C776E;
+    --hairline: #1E1C18;
+    --zebra: #0E0D0B;
+    --gutter: 16px;
+    --shell: 1100px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---------- shell ---------- */
+
+  .wrap {
+    width: 100%;
+    max-width: var(--shell);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  /* prose measure: ~70 characters, gutters excluded */
+  .wrap--text { max-width: calc(70ch + var(--gutter) * 2); }
+
+  /* ---------- grain ---------- */
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  main { position: relative; z-index: 2; }
+
+  /* ---------- header ---------- */
+
+  .masthead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 56px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .masthead .wrap {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .brand img {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  .mark {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .x-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    color: var(--secondary);
+    border: 1px solid var(--hairline);
+    border-radius: 2px;
+    transition: color 200ms ease, border-color 200ms ease;
+  }
+
+  .x-link:hover,
+  .x-link:focus-visible {
+    color: var(--text);
+    border-color: #3B362C;
+  }
+
+  .x-link svg {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+  }
+
+  #gld-price {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- live indicator ---------- */
+
+  .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: breathe 2400ms ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.3; }
+    50%      { opacity: 1; }
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .section-head .label { margin: 0; }
+
+  .meta {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    white-space: nowrap;
+  }
+
+  .tx { color: var(--secondary); }
+
+  /* shrink to the text so the flash hugs the value, not the cell */
+  #gld-price, #gld-price-stat { display: inline-block; }
+
+  /* the spread tints a halo around the text, so no padding
+     is needed and the layout is untouched */
+  @keyframes flash {
+    from {
+      background-color: rgba(201, 162, 39, 0.22);
+      box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.22);
+    }
+    to {
+      background-color: rgba(201, 162, 39, 0);
+      box-shadow: 0 0 0 5px rgba(201, 162, 39, 0);
+    }
+  }
+
+  .flash { animation: flash 400ms ease-out; }
+
+  /* ---------- sections ---------- */
+
+  section {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  /* nothing follows the last section, so no trailing hairline */
+  main section:last-child {
+    border-bottom: none;
+    padding-bottom: 72px;
+  }
+
+  .label {
+    margin: 0 0 24px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary);
+  }
+
+  /* ---------- hero ---------- */
+
+  .hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 92vh;
+    display: flex;
+    align-items: center;
+  }
+
+  /* soft gold glow, sits under the number */
+  .hero::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 44%;
+    transform: translate(-50%, -50%);
+    width: min(1100px, 150vw);
+    height: min(1100px, 150vw);
+    background: radial-gradient(circle closest-side, rgba(201, 162, 39, 0.12), rgba(201, 162, 39, 0));
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+
+  /* the translate(-50%, -50%) is restated so centring survives the animation */
+  @keyframes drift {
+    from { transform: translate(-50%, -50%) translateX(-3%) scale(1); }
+    to   { transform: translate(-50%, -50%) translateX(3%) scale(1.08); }
+  }
+
+  .hero .wrap { position: relative; z-index: 1; }
+
+  .hero-mark {
+    display: block;
+    width: 64px;
+    height: 64px;
+    margin: 0 0 28px;
+    filter: drop-shadow(0 10px 44px rgba(201, 162, 39, 0.28));
+  }
+
+  .count {
+    margin: 0;
+    font-size: clamp(120px, 18vw, 260px);
+    line-height: 0.85;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .count-sub {
+    margin: 24px 0 0;
+    font-size: 15px;
+    color: var(--secondary);
+  }
+
+  /* ---------- stat strip ---------- */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 40px 0 0;
+    border-top: 1px solid var(--hairline);
+    padding-top: 20px;
+  }
+
+  .stat {
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .stat + .stat { border-left: 1px solid var(--hairline); }
+
+  .stat:first-child { padding-left: 0; }
+  .stat:last-child { padding-right: 0; }
+
+  .stat dt {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    line-height: 1.5;
+  }
+
+  .stat dd {
+    margin: 8px 0 0;
+    font-family: var(--mono);
+    font-size: 20px;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- claim ---------- */
+
+  .claim {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.75;
+  }
+
+  .claim span { display: block; }
+
+  .claim span + span { color: var(--secondary); }
+
+  /* ---------- routing ---------- */
+
+  .routing { padding-bottom: 72px; }
+
+  .scroller {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+
+  thead th {
+    padding: 0 12px 12px;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 14px 12px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  tbody tr:nth-child(odd) { background: var(--zebra); }
+
+  th:first-child, td:first-child { padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .waiting { color: var(--secondary); }
+
+  /* ---------- contracts ---------- */
+
+  .panel {
+    border: 1px solid var(--hairline);
+    padding: 4px 20px;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+    justify-content: space-between;
+    padding: 16px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .row + .row { border-top: 1px solid var(--hairline); }
+
+  .row dt {
+    color: var(--secondary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .row dd {
+    margin: 0;
+    word-break: break-all;
+  }
+
+  /* ---------- reveal (only when scripting is on) ---------- */
+
+  .js main section {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 500ms ease-out, transform 500ms ease-out;
+  }
+
+  .js main section.in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .js tbody tr {
+    opacity: 0;
+    transition: opacity 400ms ease-out;
+  }
+
+  .js tbody tr.in { opacity: 1; }
+
+  /* ---------- reduced motion ---------- */
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero::before { animation: none; }
+
+    .flash { animation: none; }
+
+    .dot { animation: none; opacity: 1; }
+
+    .js main section,
+    .js tbody tr {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* ---------- 720px and up ---------- */
+
+  @media (min-width: 720px) {
+    :root { --gutter: 24px; }
+
+    section { padding: 40px 0; }
+
+    .stats { padding-top: 24px; }
+    .stat { padding: 0 24px; }
+
+    .hero-mark { width: 88px; height: 88px; }
+  }
+</style>
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <img src="assets/carat.png" width="18" height="18" alt="">
+      <span class="mark">Carat</span>
+    </a>
+
+    <div class="actions">
+      <span class="live">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="gld-price">&mdash;</span>
+      </span>
+
+      <a class="x-link" href="https://x.com/CaratOnRH" target="_blank" rel="noopener noreferrer" aria-label="CARAT on X">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero" id="top">
+    <div class="wrap">
+      <img class="hero-mark" src="assets/carat.png" width="88" height="88" alt="CARAT">
+      <p class="count">1,971</p>
+      <p class="count-sub">positions. fixed forever. there will never be another one.</p>
+
+      <dl class="stats">
+        <div class="stat">
+          <dt>Supply</dt>
+          <dd>1,971</dd>
+        </div>
+        <div class="stat">
+          <dt>GLD / USD</dt>
+          <dd id="gld-price-stat">&mdash;</dd>
+        </div>
+        <div class="stat">
+          <dt>GLD holders</dt>
+          <dd id="gld-holders">&mdash;</dd>
+        </div>
+        <div class="stat">
+          <dt>Routings</dt>
+          <dd id="routing-count">&mdash;</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="claim-section">
+    <div class="wrap wrap--text">
+      <h2 class="label">The claim</h2>
+      <p class="claim">
+        <span>Hold one and every trade on the pair after you routes fees to you, in gold.</span>
+        <span>Every routing is published below with its transaction hash.</span>
+      </p>
+    </div>
+  </section>
+
+  <section class="routing">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 class="label">Routing</h2>
+        <span class="meta" id="routing-updated">&mdash;</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col" class="num">Amount GLD</th>
+              <th scope="col" class="num">Value</th>
+              <th scope="col">Transaction</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="waiting">loading</td>
+              <td class="num waiting">loading</td>
+              <td class="num waiting">loading</td>
+              <td class="waiting">loading</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="contracts">
+    <div class="wrap wrap--text">
+      <h2 class="label">Contracts</h2>
+      <dl class="panel">
+        <div class="row">
+          <dt>Token address</dt>
+          <dd id="token-address">&mdash;</dd>
+        </div>
+        <div class="row">
+          <dt>Pair address</dt>
+          <dd id="pair-address">&mdash;</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOTAL = 1971;
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function comma(n) {
+    return n.toLocaleString("en-US");
+  }
+
+  /* 1. hero count-up ----------------------------------------------------- */
+
+  var count = document.querySelector(".count");
+
+  function countUp() {
+    if (!count) return;
+    if (reduced) {
+      count.textContent = comma(TOTAL);
+      return;
+    }
+
+    var duration = 1400;
+    var start = null;
+
+    function frame(now) {
+      if (start === null) start = now;
+      var t = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - t, 3);
+      count.textContent = comma(Math.round(eased * TOTAL));
+      if (t < 1) requestAnimationFrame(frame);
+    }
+
+    count.textContent = comma(0);
+    requestAnimationFrame(frame);
+  }
+
+  /* 2. section reveal ---------------------------------------------------- */
+
+  var sections = document.querySelectorAll("main section");
+
+  function revealSections() {
+    if (reduced || !("IntersectionObserver" in window)) {
+      sections.forEach(function (s) { s.classList.add("in"); });
+      return;
+    }
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.15, rootMargin: "0px 0px -10% 0px" });
+
+    sections.forEach(function (s) { io.observe(s); });
+  }
+
+  /* 3. price flash on change --------------------------------------------- */
+
+  var priceNodes = [
+    document.getElementById("gld-price"),
+    document.getElementById("gld-price-stat")
+  ].filter(Boolean);
+
+  function watchPrice() {
+    if (reduced || !("MutationObserver" in window)) return;
+
+    priceNodes.forEach(function (node) {
+      new MutationObserver(function () {
+        node.classList.remove("flash");
+        void node.offsetWidth; /* restart the animation */
+        node.classList.add("flash");
+      }).observe(node, { childList: true, characterData: true, subtree: true });
+    });
+  }
+
+  /* 5. routing rows, staggered ------------------------------------------- */
+
+  var tbody = document.querySelector("tbody");
+
+  function revealRows(rows) {
+    rows.forEach(function (row, i) {
+      if (row.classList.contains("in")) return;
+      if (!reduced) row.style.transitionDelay = i * 60 + "ms";
+      row.classList.add("in");
+    });
+  }
+
+  function watchRows() {
+    if (!tbody) return;
+
+    revealRows(Array.prototype.slice.call(tbody.rows));
+
+    if (!("MutationObserver" in window)) return;
+
+    new MutationObserver(function (mutations) {
+      var added = [];
+      mutations.forEach(function (m) {
+        Array.prototype.forEach.call(m.addedNodes, function (node) {
+          if (node.nodeName === "TR") added.push(node);
+        });
+      });
+      if (added.length) revealRows(added);
+    }).observe(tbody, { childList: true });
+  }
+
+  /* ---------------------------------------------------------------------
+     LIVE: real gold spot price, keyless + CORS-enabled.
+     GLD holds roughly 0.0917 troy oz of gold per share, so the share
+     price is derived from spot rather than quoted directly.
+     --------------------------------------------------------------------- */
+
+  /* Two independent keyless, CORS-enabled sources, tried in order, so a
+     hiccup at one provider doesn't stall the feed. Both quote gold in USD
+     per troy ounce (PAX Gold is redeemable 1 token : 1 oz). */
+  var SOURCES = [
+    {
+      url: "https://api.gold-api.com/price/XAU",
+      parse: function (d) { return d.price; }
+    },
+    {
+      url: "https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd",
+      parse: function (d) { return d["pax-gold"] && d["pax-gold"].usd; }
+    }
+  ];
+
+  var GLD_OZ_PER_SHARE = 0.0917;
+  var POLL_MS = 30000;
+
+  var priceEls = {
+    header: document.getElementById("gld-price"),
+    stat: document.getElementById("gld-price-stat")
+  };
+
+  var state = { gld: null, updatedAt: null };
+
+  function usd(n) {
+    return "$" + n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function setPrice(ozUsd) {
+    state.gld = ozUsd * GLD_OZ_PER_SHARE;
+    state.updatedAt = Date.now();
+    /* writing textContent triggers the flash via MutationObserver */
+    if (priceEls.header) priceEls.header.textContent = usd(state.gld);
+    if (priceEls.stat) priceEls.stat.textContent = usd(state.gld);
+  }
+
+  function fetchFrom(i) {
+    if (i >= SOURCES.length) {
+      /* keep the last good figure on screen rather than blanking it */
+      if (priceEls.header && !state.gld) priceEls.header.textContent = "offline";
+      return;
+    }
+
+    var source = SOURCES[i];
+
+    fetch(source.url, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var oz = source.parse(data);
+        if (typeof oz !== "number" || !isFinite(oz)) throw new Error("bad payload");
+        setPrice(oz);
+      })
+      .catch(function () {
+        fetchFrom(i + 1);
+      });
+  }
+
+  function fetchPrice() {
+    fetchFrom(0);
+  }
+
+  /* ---------------------------------------------------------------------
+     DEMO DATA — none of this is real. Placeholder holders, routing count,
+     contract addresses and table rows so the layout can be judged with
+     content in it. Delete this whole block before launch.
+     --------------------------------------------------------------------- */
+
+  var DEMO = {
+    holders: 1204,
+    routings: 247,
+    token: "0x7a2f4e9c1b8d3a5f6e0c9d2b4a8f1e7c3d5b9a06",
+    pair: "0xc41d8b6f2e9a7c05d3b1f8e4a6c2d9b7f0a3e51c",
+    rows: 8,
+    maxRows: 12,
+    newRoutingMs: 18000
+  };
+
+  function randHex(len) {
+    var s = "";
+    while (s.length < len) s += Math.floor(Math.random() * 16).toString(16);
+    return s;
+  }
+
+  function shortHash(hash) {
+    return hash.slice(0, 8) + "\u2026" + hash.slice(-6);
+  }
+
+  function stamp(date) {
+    function p(n) { return String(n).padStart(2, "0"); }
+    return date.getFullYear() + "-" + p(date.getMonth() + 1) + "-" + p(date.getDate()) +
+           " " + p(date.getHours()) + ":" + p(date.getMinutes());
+  }
+
+  function makeRouting(date) {
+    var amount = 0.008 + Math.random() * 0.32;
+    var price = state.gld || 404;
+    return {
+      date: date,
+      amount: amount,
+      value: amount * price,
+      hash: "0x" + randHex(64)
+    };
+  }
+
+  function rowFor(entry) {
+    var tr = document.createElement("tr");
+
+    function cell(text, cls) {
+      var td = document.createElement("td");
+      td.textContent = text;
+      if (cls) td.className = cls;
+      tr.appendChild(td);
+    }
+
+    cell(stamp(entry.date));
+    cell(entry.amount.toFixed(4), "num");
+    cell(usd(entry.value), "num");
+    cell(shortHash(entry.hash), "tx");
+
+    return tr;
+  }
+
+  function seedDemo() {
+    var holders = document.getElementById("gld-holders");
+    var routings = document.getElementById("routing-count");
+    var token = document.getElementById("token-address");
+    var pair = document.getElementById("pair-address");
+
+    if (holders) holders.textContent = comma(DEMO.holders);
+    if (routings) routings.textContent = comma(DEMO.routings);
+    if (token) token.textContent = DEMO.token;
+    if (pair) pair.textContent = DEMO.pair;
+
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    var when = Date.now();
+    for (var i = 0; i < DEMO.rows; i++) {
+      tbody.appendChild(rowFor(makeRouting(new Date(when))));
+      when -= (3 + Math.random() * 37) * 60000;
+    }
+  }
+
+  function pushRouting() {
+    if (!tbody) return;
+
+    tbody.insertBefore(rowFor(makeRouting(new Date())), tbody.firstChild);
+    while (tbody.rows.length > DEMO.maxRows) {
+      tbody.deleteRow(tbody.rows.length - 1);
+    }
+
+    DEMO.routings += 1;
+    var routings = document.getElementById("routing-count");
+    if (routings) routings.textContent = comma(DEMO.routings);
+
+    if (Math.random() < 0.4) {
+      DEMO.holders += 1;
+      var holders = document.getElementById("gld-holders");
+      if (holders) holders.textContent = comma(DEMO.holders);
+    }
+  }
+
+  /* relative "updated" clock ---------------------------------------------- */
+
+  var updated = document.getElementById("routing-updated");
+
+  function tickUpdated() {
+    if (!updated) return;
+    if (!state.updatedAt) {
+      updated.textContent = "connecting";
+      return;
+    }
+    var secs = Math.round((Date.now() - state.updatedAt) / 1000);
+    updated.textContent = secs < 5
+      ? "updated just now"
+      : "updated " + secs + "s ago";
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  countUp();
+  revealSections();
+  watchPrice();
+  watchRows();
+
+  fetchPrice();
+  setInterval(fetchPrice, POLL_MS);
+
+  seedDemo();
+  setInterval(pushRouting, DEMO.newRoutingMs);
+
+  tickUpdated();
+  setInterval(tickUpdated, 1000);
+})();
+</script>
+
+</body>
+</html>
